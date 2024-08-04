@@ -1,0 +1,88 @@
+version: "3.8"
+services:
+  proxy_service:
+    image: proxy_service:0.0.1
+    build:
+      context: ./services/r-proxy-service
+      dockerfile: Dockerfile
+    environment:
+      - SERVER_PORT=8087
+      - STORAGE_CLIENT_URI=http://localhost:8086/Service/StudentService
+    container_name: proxy_service
+    ports:
+      - "8087:8087"
+    depends_on:
+      - rabbit_mq
+      - storage_service
+  rabbit_mq:
+    image: rabbitmq:3.12.14-management
+    container_name: rabbit
+    environment:
+      - RABBITMQ_DEFAULT_USER=guest
+      - RABBITMQ_DEFAULT_PASS=guest
+    ports:
+      - "15672:15672"
+      - "5672:5672"
+    hostname: local-rabbit
+    restart: always
+  storage_service:
+    image: storage_service:0.0.1
+    build:
+      context: ./services/s-storage-service
+      dockerfile: Dockerfile
+    environment:
+      - SERVER_PORT=8086
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://storage_service_db:5432/storage_db
+      - APP_MINIO_URL=http://minio:9000
+    container_name: storage_service
+    ports:
+      - "8086:8086"
+    depends_on:
+      - storage_service_db
+      - rabbit_mq
+      - minio
+  storage_service_db:
+    image: postgres:14.7-alpine
+    environment:
+      - POSTGRES_PASSWORD=test
+      - POSTGRES_USER=test
+    container_name: storage_service_db
+    volumes:
+      - ./services/s-storage-service/infrastructure/db/create_db.sql:/docker-entrypoint-initdb.d/create_db.sql
+      - storage-db-data:/var/lib/postgresql/data
+    ports:
+      - "5434:5432"
+    restart: unless-stopped
+  minio:
+    image: minio/minio:latest
+    command: server --console-address ":9001" /data/
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: root
+      MINIO_ROOT_PASSWORD: rootroot
+    container_name: minio
+    volumes:
+      - minio-storage:/data
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:9000/minio/health/live" ]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+  pgadmin:
+    container_name: pgadmin4_container
+    image: dpage/pgadmin4:7
+    restart: always
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "8080:80"
+    volumes:
+      - pgadmin-data:/var/lib/pgadmin
+
+volumes:
+  storage-db-data:
+  pgadmin-data:
+  minio-storage:
