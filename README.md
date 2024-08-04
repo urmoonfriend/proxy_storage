@@ -1,4 +1,4 @@
-# Proxy Service
+# Proxy-Storage Service
 
 This service acts as a proxy between users and the storage service. Users interact with this service via RESTful API calls, and the service communicates with the storage backend using SOAP. The service can interact with the storage service either via RabbitMQ (asynchronously) or directly via SOAP.
 
