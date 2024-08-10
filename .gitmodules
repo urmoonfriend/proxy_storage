@@ -1,3 +1,6 @@
 [submodule "services/r-proxy-service"]
 	path = services/r-proxy-service
 	url = https://github.com/urmoonfriend/r-proxy-service.git
+[submodule "services/s-storage-service"]
+	path = services/s-storage-service
+	url = https://github.com/urmoonfriend/s-storage-service.git
